@@ -49,7 +49,7 @@ func ToProtoType(typ string) string {
 		return "bool"
 	case "sql.NullBool", "pgtype.Bool":
 		return "google.protobuf.BoolValue"
-	case "sql.NullInt32", "pgtype.Int4", "pgtype.Int2":
+	case "sql.NullInt16", "sql.NullInt32", "pgtype.Int4", "pgtype.Int2":
 		return "google.protobuf.Int32Value"
 	case "pgtype.Uint32":
 		return "google.protobuf.UInt32Value"
@@ -57,7 +57,7 @@ func ToProtoType(typ string) string {
 		return "int64"
 	case "uint64":
 		return "uint64"
-	case "int16", "int32":
+	case "int8", "int16", "int32":
 		return "int32"
 	case "uint16", "uint32":
 		return "uint32"
@@ -99,7 +99,7 @@ func BindToProto(src, dst, attrName, attrType string) []string {
 	case "pgtype.Uint32":
 		res = append(res, fmt.Sprintf("if %s.%s.Valid {", src, attrName))
 		res = append(res, fmt.Sprintf("%s.%s = wrapperspb.UInt32(%s.%s.Uint32) }", dst, CamelCaseProto(attrName), src, attrName))
-	case "sql.NullInt32", "pgtype.Int4":
+	case "sql.NullInt16", "sql.NullInt32", "pgtype.Int4":
 		res = append(res, fmt.Sprintf("if %s.%s.Valid {", src, attrName))
 		res = append(res, fmt.Sprintf("%s.%s = wrapperspb.Int32(%s.%s.Int32) }", dst, CamelCaseProto(attrName), src, attrName))
 	case "sql.NullInt64", "pgtype.Int8":
@@ -125,7 +125,7 @@ func BindToProto(src, dst, attrName, attrType string) []string {
 		res = append(res, fmt.Sprintf("if v, err := json.Marshal(%s.%s); err == nil {", src, attrName))
 		res = append(res, fmt.Sprintf("%s.%s = wrapperspb.String(string(v))", dst, CamelCaseProto(attrName)))
 		res = append(res, "}")
-	case "int16":
+	case "int8", "int16":
 		res = append(res, fmt.Sprintf("%s.%s = int32(%s.%s)", dst, CamelCaseProto(attrName), src, attrName))
 	default:
 		_, elementType := originalAndElementType(attrType)
@@ -162,7 +162,7 @@ func BindToGo(src, dst, attrName, attrType string, newVar bool) []string {
 		res = append(res, fmt.Sprintf("if v := %s.Get%s(); v != nil {", src, CamelCaseProto(attrName)))
 		res = append(res, fmt.Sprintf("%s = %s{Valid: true, Uint32: v.Value}", dst, attrType))
 		res = append(res, "}")
-	case "sql.NullInt32", "pgtype.Int4":
+	case "sql.NullInt16", "sql.NullInt32", "pgtype.Int4":
 		if newVar {
 			res = append(res, fmt.Sprintf("var %s %s", dst, attrType))
 		}
@@ -270,6 +270,12 @@ func BindToGo(src, dst, attrName, attrType string, newVar bool) []string {
 			res = append(res, fmt.Sprintf("%s := int16(%s.Get%s())", dst, src, CamelCaseProto(attrName)))
 		} else {
 			res = append(res, fmt.Sprintf("%s = int16(%s.Get%s())", dst, src, CamelCaseProto(attrName)))
+		}
+	case "int8":
+		if newVar {
+			res = append(res, fmt.Sprintf("%s := int8(%s.Get%s())", dst, src, CamelCaseProto(attrName)))
+		} else {
+			res = append(res, fmt.Sprintf("%s = int8(%s.Get%s())", dst, src, CamelCaseProto(attrName)))
 		}
 	case "int":
 		if newVar {
